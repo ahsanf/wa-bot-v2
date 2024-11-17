@@ -26,7 +26,7 @@ export class PersonalService {
       case 'alamat':
         return await this.sendAddress()
       case 'help':
-        return `List Command\n\n1. in nama-jumlah\n2. out -ama-jumlah\n3. show\n4. filter bulan-tahun-keyword\n5. recap tahun\n6. ordered bulan-tahun-tipe\n7. rekening\n8. alamat`
+        return `List Command\n\n1. in nama-jumlah\n2. out nama-jumlah\n3. show\n4. filter bulan-tahun-keyword\n5. recap tahun\n6. ordered bulan-tahun-tipe\n7. rekening\n8. alamat`
       default:
         return 'Command not found!'
     }
