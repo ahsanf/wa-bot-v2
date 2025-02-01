@@ -89,12 +89,9 @@ export class PersonalService {
 
   async showReportByYear(args: string): Promise<string> {
     try {
-      const response = await axios.get(`${this.apiUrl}/personal-finance/recap`, {
+      const response = await axios.get(`${this.apiUrl}/personal-finance/recap?year=${args}`, {
         headers: {
           Accept: 'application/json'
-        },
-        params: {
-          args
         }
       })
       const object = JSON.parse(JSON.stringify(response.data))
