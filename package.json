@@ -3,17 +3,23 @@
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
-    "build": "npx tsc",
+    "test": "jest dist/test",
+    "build": "npx tsc && npx tsc-alias",
     "start": "node dist/index.js",
-    "dev": "concurrently \"npx tsc --watch\" \"nodemon -q dist/index.js\"",
-    "test": "yarn build && jest ./dist/test",
-    "watch": "concurrently \"npx tsc --watch\" \"nodemon -q dist/index.js\""
+    "dev": "concurrently \"npx tsc --watch\" \"npx tsc-alias --watch\" \"nodemon -q dist/index.js\"",
+    "watch": "concurrently \"npx tsc --watch\" \"npx tsc-alias --watch\" \"nodemon -q dist/index.js\"",
+    "knex": "knex",
+    "build-swc": "concurrently \"swc src -d dist\" \"swc index.ts -d dist\"",
+    "start-swc": "bun dist/index.js",
+    "dev-swc": "nodemon --watch 'src/**/*.ts' --watch 'index.ts' --exec 'pnpm run build-swc && pnpm run start-swc' --ext ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@swc/cli": "^0.7.2",
+    "@swc/core": "^1.11.21",
     "ts-node": "^10.9.2",
     "typescript": "^5.6.3"
   },
@@ -27,6 +33,8 @@
     "openai": "^4.72.0",
     "puppeteer": "^23.8.0",
     "qrcode-terminal": "^0.12.0",
-    "whatsapp-web.js": "^1.23.0"
+    "whatsapp-web.js": "^1.23.0",
+    "nodemon": "^3.1.0",
+    "concurrently": "^8.2.2"
   }
 }
