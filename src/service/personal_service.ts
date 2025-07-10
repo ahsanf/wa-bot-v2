@@ -140,4 +140,5 @@ export class PersonalService {
   async sendAddress(): Promise<string>{
     return `Alamat\n\nRumah Warna Pink Pagar Hitam\nhttps://goo.gl/maps/2UUcq4rV8bX3twGi8\nKemirisewu RT 006/025, Sidorejo, Godean, Sleman, DIY`
   }
+  
 }

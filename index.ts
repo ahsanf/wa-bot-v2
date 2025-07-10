@@ -2,6 +2,7 @@ import { Client, LocalAuth } from "whatsapp-web.js";
 import * as qrcode from "qrcode-terminal";
 import { BotController } from "./src/controller/controller";
 import { config } from "./src/config/config";
+import { SchedulerController } from "./src/controller/scheduler";
 
 const client = new Client({
   authStrategy: new LocalAuth(),
@@ -39,3 +40,4 @@ client.on("ready", () => {
 client.initialize();
 
 new BotController(client).init();
+new SchedulerController(client).startScheduler();

@@ -10,6 +10,8 @@ const COMMAND_LIST = process.env.COMMAND_LIST ?? ''
 const KARISMA_GROPUP_ID = process.env.KARISMA_GROUP_ID ?? ''
 const PUBLIC_COMMAND_LIST = process.env.PUBLIC_COMMAND_LIST ?? ''
 const CLIENT_REMOTE_PATH = process.env.CLIENT_REMOTE_PATH ?? ''
+const ANNIVERSARY_DATE = process.env.ANNIVERSARY_DATE ?? '2000-03-08'
+const WEDDING_DATE = process.env.WEDDING_DATE ?? '2000-03-26'
 
 export const config = {
   apiUrl: API_URL,
@@ -19,5 +21,7 @@ export const config = {
   commandList: COMMAND_LIST.split(','),
   publicCommandList: PUBLIC_COMMAND_LIST.split(','),
   karismaGroupId: KARISMA_GROPUP_ID,
-  clientRemotePath: CLIENT_REMOTE_PATH
+  clientRemotePath: CLIENT_REMOTE_PATH,
+  anniversaryDate: ANNIVERSARY_DATE,
+  weddingDate: WEDDING_DATE,
 }
