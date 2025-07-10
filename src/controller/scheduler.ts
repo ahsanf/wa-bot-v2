@@ -21,7 +21,7 @@ export class SchedulerController {
 
     startScheduler() {
         // Run daily at 9:00 AM to check for special dates
-        cron.schedule('0 9 8 * *', async () => {
+        cron.schedule('0 6 8 * *', async () => {
             const today = new Date();
             // Get dates from environment variables, with fallback defaults
             const anniversaryMessage = this.createAnniversaryMessage(today);
