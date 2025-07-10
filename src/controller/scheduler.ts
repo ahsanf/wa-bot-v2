@@ -21,23 +21,20 @@ export class SchedulerController {
 
     startScheduler() {
         // Run daily at 9:00 AM to check for special dates
-        cron.schedule('0 9 * * *', async () => {
+        cron.schedule('0 9 8 * *', async () => {
             const today = new Date();
             // Get dates from environment variables, with fallback defaults
-          
-            // Check if today is the 8th of the month for anniversary celebration
-            if (today.getDate() === 8) {
-                const anniversaryMessage = this.createAnniversaryMessage(today);
-                const weddingCountdownMessage = this.createWeddingCountdownMessage();
-                
-                // Combine both messages
-                const combinedMessage = 
-                    `${anniversaryMessage}\n\n` +
-                    `---\n\n` +
-                    `${weddingCountdownMessage}`;
-                
-                await this.sendMessage(combinedMessage);
-            }
+            const anniversaryMessage = this.createAnniversaryMessage(today);
+            const weddingCountdownMessage = this.createWeddingCountdownMessage();
+            
+            // Combine both messages
+            const combinedMessage = 
+                `${anniversaryMessage}\n\n` +
+                `---\n\n` +
+                `${weddingCountdownMessage}`;
+            
+            await this.sendMessage(combinedMessage);
+            
         });
     }
 
