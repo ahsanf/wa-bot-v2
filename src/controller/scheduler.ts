@@ -6,8 +6,8 @@ export class SchedulerController {
     private client: Client
     private anniversaryDate: Date
     private weddingDate: Date
-    // private phoneNumber: string = '6282115025986@c.us'
-    private phoneNumber: string = '6281359888622@c.us'
+    private phoneNumber: string = '6282115025986@c.us'
+    // private phoneNumber: string = '6281359888622@c.us'
 
     constructor(client: Client) {
         this.client = client
@@ -25,9 +25,8 @@ export class SchedulerController {
             const today = new Date();
             // Get dates from environment variables, with fallback defaults
           
-            
             // Check if today is the 8th of the month for anniversary celebration
-            // if (today.getDate() === 8) {
+            if (today.getDate() === 8) {
                 const anniversaryMessage = this.createAnniversaryMessage(today);
                 const weddingCountdownMessage = this.createWeddingCountdownMessage();
                 
@@ -38,16 +37,15 @@ export class SchedulerController {
                     `${weddingCountdownMessage}`;
                 
                 await this.sendMessage(combinedMessage);
-            // }
+            }
         });
     }
 
     private createAnniversaryMessage(today: Date): string {
         const monthsPassed = this.calculateMonthsDifference(this.anniversaryDate, today);
         
-        return `❤️ *Happy ${monthsPassed}${this.getOrdinalSuffix(monthsPassed)} Month Anniversary!* ❤️\n\n` +
+        return `❤️ *Happy ${monthsPassed}${this.getOrdinalSuffix(monthsPassed)} Month Anniversary Sayanngku!* ❤️\n\n` +
                `Sudah ${monthsPassed} bulan kita bersama sejak tanggal 8 Maret 2025.\n` +
-               `Semoga cinta kita terus bertumbuh dan semakin kuat setiap harinya.\n` +
                `Aku sayang kamu! 💕`;
     }
 
