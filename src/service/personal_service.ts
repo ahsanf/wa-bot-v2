@@ -134,7 +134,7 @@ export class PersonalService {
   }
 
   async sendAccounts(): Promise<string>{
-    return `1370016753309 (Mandiri) a.n Ahsan Firdaus\n081359888622 (Dana, OVO, Gopay)\n103755631013 (Bank Jago)\nJagoId: ahsan\n1449627309 (BNI) a.n Ahsan Firdaus`;
+    return `1370016753309 (Mandiri) a.n Ahsan Firdaus\n081359888622 (Dana, OVO, Gopay)\n103755631013 (Bank Jago)\nJagoId: ahsanf\n1449627309 (BNI) a.n Ahsan Firdaus`;
   }
 
   async sendAddress(): Promise<string>{
