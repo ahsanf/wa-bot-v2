@@ -3,7 +3,6 @@ import { config } from "../config/config";
 import { PersonalService } from "../service/personal_service";
 import { OpenAIService } from "../service/open_ai_service";
 import { KarismaService } from "../service/karisma_service";
-
 export class BotController {
   private client: Client
   private commandList = config.commandList
@@ -42,9 +41,10 @@ export class BotController {
     })
 
     this.client.on('message', async (message) => {
+      const { body, from } = message
+
       const checkIsCommand = message.body.startsWith('!')
       if(!checkIsCommand) return
-      const { body, from } = message
       const command = body.split(' ')[0].split('!')[1]
       const args = body.split(' ').slice(1)
       const isCommand = this.publicCommandList.includes(command)

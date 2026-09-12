@@ -110,6 +110,45 @@ export class SchedulerController {
         return 'th';
     }
 
+    startTicketWarScheduler() {
+        const { ticketWarEnabled, ticketWarPhoneNumber, ticketWarDate, ticketWarTime, ticketWarMessage } = config
+
+        if (!ticketWarEnabled || !ticketWarPhoneNumber || !ticketWarDate || !ticketWarTime) {
+            console.log('Ticket war scheduler disabled or missing config, skipping.')
+            return
+        }
+
+        const [year, month, day] = ticketWarDate.split('-').map(Number)
+        const timeParts = ticketWarTime.split(':').map(Number)
+        const [hour, minute] = timeParts
+        const targetSecond = timeParts[2] ?? 0
+
+        // cron: minute hour day-of-month month *
+        const cronExpression = `${minute} ${hour} ${day} ${month} *`
+
+        cron.schedule(cronExpression, () => {
+            const nowJakarta = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }))
+            if (nowJakarta.getFullYear() !== year) return
+
+            // Use setTimeout to hit the exact second within this minute
+            const elapsedMs = nowJakarta.getSeconds() * 1000 + nowJakarta.getMilliseconds()
+            const delay = Math.max(0, targetSecond * 1000 - elapsedMs)
+
+            setTimeout(async () => {
+                // Log before send — this timestamp reflects when message is initiated
+                console.log('Ticket war sending at', new Date().toISOString())
+                try {
+                    await this.client.sendMessage(`${ticketWarPhoneNumber}@c.us`, ticketWarMessage)
+                    console.log('Ticket war acknowledged at', new Date().toISOString())
+                } catch (error) {
+                    console.error('Failed to send ticket war message:', error)
+                }
+            }, delay)
+        }, { timezone: 'Asia/Jakarta' })
+
+        console.log(`Ticket war scheduler set: send on ${ticketWarDate} at ${ticketWarTime} WIB → cron "${cronExpression}"`)
+    }
+
     private async sendMessage(message: string): Promise<void> {
         try {
             await this.client.sendMessage(this.phoneNumber, message);
