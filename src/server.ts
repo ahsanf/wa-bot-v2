@@ -111,12 +111,12 @@ export function createServer() {
     }
   });
 
-  app.get("/api/finance/ordered", async (req, res) => {
+  app.get("/api/finance/list", async (req, res) => {
     try {
       // the finance API expects an empty type for "all", not the literal string
-      const { month, year, type } = req.query;
+      const { month, year, type, search } = req.query;
       const finalType = type === "all" ? "" : type === "in" ? "income" : type === "out" ? "expense" : type;
-      const { data } = await financeApi.get("/ordered", { params: { month, year, type: finalType } });
+      const { data } = await financeApi.get("/list", { params: { month, year, type: finalType, search } });
       res.json(data);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -126,6 +126,24 @@ export function createServer() {
   app.post("/api/finance/entry", async (req, res) => {
     try {
       const { data } = await financeApi.post("/store", req.body);
+      res.json(data);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.put("/api/finance/entry/:id", async (req, res) => {
+    try {
+      const { data } = await financeApi.put(`/update/${req.params.id}`, req.body);
+      res.json(data);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/finance/entry/:id", async (req, res) => {
+    try {
+      const { data } = await financeApi.delete(`/delete/${req.params.id}`);
       res.json(data);
     } catch (error: any) {
       res.status(500).json({ message: error.message });

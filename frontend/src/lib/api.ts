@@ -16,10 +16,16 @@ export type WaStatus = {
 }
 
 // total_income/total_expense and recap income/expense already come pre-formatted
-// as Rupiah strings from the finance API; ordered-list amount is a numeric string.
+// as Rupiah strings from the finance API; list amount is a numeric string.
 export type FinanceTotals = { total_expense: string; total_income: string }
 export type FinanceRecapRow = { month_name: string; income: string; expense: string }
-export type FinanceEntry = { name: string; amount: string; type: "income" | "expense" }
+export type FinanceEntry = {
+  id: number
+  name: string
+  amount: string
+  date: string
+  type: "income" | "expense"
+}
 
 export type ScheduledMessage = {
   id: string
@@ -50,8 +56,20 @@ export const api = {
   financeSummary: () => request<{ data: FinanceTotals }>("/finance/summary"),
   financeRecap: (year: string) =>
     request<{ message: string; data: FinanceRecapRow[] }>(`/finance/recap?year=${year}`),
-  financeOrdered: (params: { month?: string; year?: string; type?: string }) =>
-    request<{ message: string; data: FinanceEntry[] }>(`/finance/ordered?${new URLSearchParams(params)}`),
+  financeList: (params: { month?: string; year?: string; type?: string; search?: string }) =>
+    request<{ message: string; data: FinanceEntry[] }>(`/finance/list?${new URLSearchParams(params)}`),
+  financeEntry: (name: string, amount: string, type: "income" | "expense", date?: string) =>
+    request<{ message: string }>("/finance/entry", {
+      method: "POST",
+      body: JSON.stringify({ name, amount, type, date }),
+    }),
+  financeUpdateEntry: (id: number, name: string, amount: string, type: "income" | "expense", date: string) =>
+    request<{ message: string }>(`/finance/entry/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ name, amount, type, date }),
+    }),
+  financeDeleteEntry: (id: number) =>
+    request<{ message: string }>(`/finance/entry/${id}`, { method: "DELETE" }),
 
   scheduledList: () => request<{ data: ScheduledMessage[] }>("/scheduled-messages"),
   scheduledCreate: (to: string, message: string, sendAt: string) =>
