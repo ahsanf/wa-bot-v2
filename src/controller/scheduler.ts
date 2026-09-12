@@ -8,20 +8,26 @@ export class SchedulerController {
     private weddingDate: Date
     private phoneNumber: string = '6282115025986@c.us'
     // private phoneNumber: string = '6281359888622@c.us'
+    private tasks: cron.ScheduledTask[] = []
 
     constructor(client: Client) {
         this.client = client
         const anniversaryDateString = config.anniversaryDate;
         const weddingDateString = config.weddingDate;
-        
+
         // Parse the dates
         this.anniversaryDate = new Date(anniversaryDateString);
         this.weddingDate = new Date(weddingDateString);
     }
 
+    stopAll() {
+        this.tasks.forEach((task) => task.stop())
+        this.tasks = []
+    }
+
     startScheduler() {
         // Run daily at 9:00 AM to check for special dates
-        cron.schedule('0 6 8 * *', async () => {
+        const task = cron.schedule('0 6 8 * *', async () => {
             const today = new Date();
             // Get dates from environment variables, with fallback defaults
             const anniversaryMessage = this.createAnniversaryMessage(today);
@@ -34,8 +40,9 @@ export class SchedulerController {
                 `${weddingCountdownMessage}`;
             
             await this.sendMessage(combinedMessage);
-            
+
         });
+        this.tasks.push(task)
     }
 
     private createAnniversaryMessage(today: Date): string {
@@ -126,7 +133,7 @@ export class SchedulerController {
         // cron: minute hour day-of-month month *
         const cronExpression = `${minute} ${hour} ${day} ${month} *`
 
-        cron.schedule(cronExpression, () => {
+        const task = cron.schedule(cronExpression, () => {
             const nowJakarta = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }))
             if (nowJakarta.getFullYear() !== year) return
 
@@ -145,6 +152,7 @@ export class SchedulerController {
                 }
             }, delay)
         }, { timezone: 'Asia/Jakarta' })
+        this.tasks.push(task)
 
         console.log(`Ticket war scheduler set: send on ${ticketWarDate} at ${ticketWarTime} WIB → cron "${cronExpression}"`)
     }

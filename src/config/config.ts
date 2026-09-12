@@ -10,6 +10,7 @@ const COMMAND_LIST = process.env.COMMAND_LIST ?? ''
 const KARISMA_GROPUP_ID = process.env.KARISMA_GROUP_ID ?? ''
 const PUBLIC_COMMAND_LIST = process.env.PUBLIC_COMMAND_LIST ?? ''
 const CLIENT_REMOTE_PATH = process.env.CLIENT_REMOTE_PATH ?? ''
+const PUPPETEER_EXECUTABLE_PATH = process.env.PUPPETEER_EXECUTABLE_PATH ?? ''
 const ANNIVERSARY_DATE = process.env.ANNIVERSARY_DATE ?? '2000-03-08'
 const WEDDING_DATE = process.env.WEDDING_DATE ?? '2000-03-26'
 
@@ -45,6 +46,7 @@ export const config = {
   publicCommandList: PUBLIC_COMMAND_LIST.split(','),
   karismaGroupId: KARISMA_GROPUP_ID,
   clientRemotePath: CLIENT_REMOTE_PATH,
+  puppeteerExecutablePath: PUPPETEER_EXECUTABLE_PATH || undefined,
   anniversaryDate: ANNIVERSARY_DATE,
   weddingDate: WEDDING_DATE,
   ticketWarEnabled: TICKET_WAR_ENABLED,
