@@ -221,6 +221,23 @@ function History({ refreshKey }: { refreshKey: number }) {
     return [...totals.values()]
   }, [rows])
 
+  const filteredTotals = useMemo(() => {
+    let income = 0
+    let expense = 0
+    for (const row of rows) {
+      const amount = Number(row.amount) || 0
+      if (row.type === "income") income += amount
+      else expense += amount
+    }
+    return { income, expense, selisih: income - expense }
+  }, [rows])
+
+  const pageSize = 10
+  const [page, setPage] = useState(1)
+  useEffect(() => setPage(1), [rows])
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize))
+  const pagedRows = rows.slice((page - 1) * pageSize, page * pageSize)
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end gap-2">
@@ -271,6 +288,30 @@ function History({ refreshKey }: { refreshKey: number }) {
           {loading ? "Memuat..." : "Filter"}
         </Button>
       </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardDescription>Pemasukan (Filter)</CardDescription>
+            <CardTitle className="text-2xl">{formatRupiah(filteredTotals.income)}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardDescription>Pengeluaran (Filter)</CardDescription>
+            <CardTitle className="text-2xl">{formatRupiah(filteredTotals.expense)}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardDescription>Selisih (Filter)</CardDescription>
+            <CardTitle
+              className={`text-2xl font-bold ${filteredTotals.selisih < 0 ? "text-destructive" : ""}`}
+            >
+              {formatRupiah(filteredTotals.selisih)}
+            </CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
       <CategoryPieChart data={breakdown} />
       <CategoryBreakdownChart data={breakdown} />
       <Table>
@@ -291,7 +332,7 @@ function History({ refreshKey }: { refreshKey: number }) {
               </TableCell>
             </TableRow>
           )}
-          {rows.map((row) =>
+          {pagedRows.map((row) =>
             editingId === row.id ? (
               <TableRow key={row.id}>
                 <TableCell>
@@ -356,6 +397,26 @@ function History({ refreshKey }: { refreshKey: number }) {
           )}
         </TableBody>
       </Table>
+      {rows.length > 0 && (
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">
+            Halaman {page} dari {totalPages} ({rows.length} transaksi)
+          </span>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
+              Sebelumnya
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+            >
+              Berikutnya
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
