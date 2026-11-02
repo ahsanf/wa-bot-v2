@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import {
@@ -504,12 +505,217 @@ function AddEntry({ onAdded }: { onAdded: () => void }) {
   )
 }
 
+type BulkLine = {
+  raw: string
+  date: string | null // YYYY-MM-DD from the WhatsApp timestamp, null when the line has none
+  name: string
+  amount: string
+  type: "income" | "expense"
+}
+
+// "[06:50, 10/31/2026] ahsanf: !out Makan-36000"
+const WA_PREFIX = /^\[[^,\]]*,\s*(\d{1,2})\/(\d{1,2})\/(\d{2,4})\]/
+const BOT_COMMAND = /!(in|out)\s+(.+)-\s*([\d.,]+)\s*$/i
+
+function parseBulkText(text: string): BulkLine[] {
+  const parsed = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .flatMap((raw) => {
+      const cmd = raw.match(BOT_COMMAND)
+      const amount = cmd?.[3].replace(/\D/g, "")
+      if (!cmd || !amount || Number(amount) === 0) return []
+      const prefix = raw.match(WA_PREFIX)
+      return [
+        {
+          raw,
+          dateParts: prefix ? [Number(prefix[1]), Number(prefix[2]), Number(prefix[3])] : null,
+          name: cmd[2].trim(),
+          amount,
+          type: (cmd[1].toLowerCase() === "in" ? "income" : "expense") as BulkLine["type"],
+        },
+      ]
+    })
+
+  // WhatsApp follows the phone locale (M/D/YYYY or D/M/YYYY); infer from any
+  // unambiguous line, defaulting to M/D.
+  const dayFirst = parsed.some((p) => p.dateParts && p.dateParts[0] > 12)
+
+  return parsed.map(({ dateParts, ...rest }) => {
+    if (!dateParts) return { ...rest, date: null }
+    const [a, b, y] = dateParts
+    const [month, day] = dayFirst ? [b, a] : [a, b]
+    const year = y < 100 ? 2000 + y : y
+    return { ...rest, date: `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}` }
+  })
+}
+
+function formatShortDate(iso: string) {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })
+}
+
+function BulkEntry({ onAdded }: { onAdded: () => void }) {
+  const [date, setDate] = useState("")
+  const [text, setText] = useState("")
+  const [excluded, setExcluded] = useState<Set<number>>(new Set())
+  const [saving, setSaving] = useState(false)
+
+  const parsed = useMemo(() => parseBulkText(text), [text])
+
+  // row indices shift whenever the text or date changes, so unchecked rows reset with them
+  const changeDate = (value: string) => {
+    setDate(value)
+    setExcluded(new Set())
+  }
+  const changeText = (value: string) => {
+    setText(value)
+    setExcluded(new Set())
+  }
+
+  // lines without a timestamp (e.g. a plain "!out Makan-20000") take the picked date
+  const matching = parsed.map((row, index) => ({ ...row, index })).filter((row) => row.date === null || row.date === date)
+  const toSave = matching.filter((row) => !excluded.has(row.index))
+  const total = toSave.reduce(
+    (acc, row) => {
+      acc[row.type] += Number(row.amount)
+      return acc
+    },
+    { income: 0, expense: 0 }
+  )
+
+  const datesInText = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const row of parsed) if (row.date) counts.set(row.date, (counts.get(row.date) ?? 0) + 1)
+    return [...counts.entries()].sort(([a], [b]) => a.localeCompare(b))
+  }, [parsed])
+
+  const toggle = (index: number) =>
+    setExcluded((prev) => {
+      const next = new Set(prev)
+      if (next.has(index)) next.delete(index)
+      else next.add(index)
+      return next
+    })
+
+  const handleSave = async () => {
+    setSaving(true)
+    const saved = new Set<number>()
+    for (const row of toSave) {
+      try {
+        await api.financeEntry(row.name, row.amount, row.type, date)
+        saved.add(row.index)
+      } catch {
+        // left in the textarea so it can be retried
+      }
+    }
+    setSaving(false)
+
+    const failed = toSave.length - saved.size
+    if (failed === 0) toast.success(`${saved.size} transaksi disimpan`)
+    else toast.error(`${saved.size} disimpan, ${failed} gagal`)
+
+    // keep only what's still unsaved (other dates + failures) so the next date can be imported right away
+    changeText(
+      parsed
+        .filter((_, i) => !saved.has(i) && !excluded.has(i))
+        .map((row) => row.raw)
+        .join("\n")
+    )
+    if (saved.size > 0) onAdded()
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Tambah Massal</CardTitle>
+        <CardDescription>
+          Pilih tanggal, lalu tempel chat WhatsApp berisi perintah <code>!out Nama-Jumlah</code> /{" "}
+          <code>!in Nama-Jumlah</code>. Hanya baris dengan tanggal yang dipilih yang disimpan.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <div className="grid gap-2">
+          <Label htmlFor="bulk-date">Tanggal</Label>
+          <Input id="bulk-date" type="date" value={date} onChange={(e) => changeDate(e.target.value)} className="w-36" />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="bulk-text">Teks</Label>
+          <Textarea
+            id="bulk-text"
+            placeholder={date ? "[06:50, 10/31/2026] ahsanf: !out Makan-36000" : "Pilih tanggal terlebih dahulu"}
+            value={text}
+            onChange={(e) => changeText(e.target.value)}
+            disabled={!date}
+            className="max-h-60 font-mono text-xs md:text-xs"
+          />
+        </div>
+        {datesInText.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm text-muted-foreground">Tanggal di teks:</span>
+            {datesInText.map(([d, count]) => (
+              <Button key={d} size="sm" variant={d === date ? "default" : "outline"} onClick={() => changeDate(d)}>
+                {formatShortDate(d)} ({count})
+              </Button>
+            ))}
+          </div>
+        )}
+        {text.trim() && matching.length === 0 && (
+          <p className="text-sm text-muted-foreground">Tidak ada transaksi untuk tanggal ini.</p>
+        )}
+        {matching.length > 0 && (
+          <>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-8" />
+                  <TableHead>Nama</TableHead>
+                  <TableHead>Jumlah</TableHead>
+                  <TableHead>Tipe</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {matching.map((row) => (
+                  <TableRow key={row.index} className={excluded.has(row.index) ? "opacity-50" : ""}>
+                    <TableCell>
+                      <input
+                        type="checkbox"
+                        role="checkbox"
+                        className="size-4 accent-primary"
+                        checked={!excluded.has(row.index)}
+                        onChange={() => toggle(row.index)}
+                      />
+                    </TableCell>
+                    <TableCell>{row.name}</TableCell>
+                    <TableCell>{formatRupiah(row.amount)}</TableCell>
+                    <TableCell>{formatType(row.type)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-sm text-muted-foreground">
+                {toSave.length} transaksi
+                {total.expense > 0 && ` · Pengeluaran ${formatRupiah(total.expense)}`}
+                {total.income > 0 && ` · Pemasukan ${formatRupiah(total.income)}`}
+              </span>
+              <Button onClick={handleSave} disabled={saving || toSave.length === 0}>
+                {saving ? "Menyimpan..." : `Simpan ${toSave.length} Transaksi`}
+              </Button>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
 export function Finance() {
   const [refreshKey, setRefreshKey] = useState(0)
 
   return (
     <div className="flex flex-col gap-4">
       <AddEntry onAdded={() => setRefreshKey((k) => k + 1)} />
+      <BulkEntry onAdded={() => setRefreshKey((k) => k + 1)} />
       <Summary refreshKey={refreshKey} />
       <Tabs defaultValue="history">
         <TabsList>
